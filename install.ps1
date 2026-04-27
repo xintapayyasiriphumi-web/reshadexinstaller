@@ -21,15 +21,13 @@ $EXE_PATH = "$env:TEMP\$EXE_NAME"
 function Write-Banner {
     Clear-Host
     Write-Host ""
-    Write-Host "  ██████╗ ███████╗███████╗██╗  ██╗ █████╗ ██████╗ ███████╗" -ForegroundColor Magenta
-    Write-Host "  ██╔══██╗██╔════╝██╔════╝██║  ██║██╔══██╗██╔══██╗██╔════╝" -ForegroundColor Magenta
-    Write-Host "  ██████╔╝█████╗  ███████╗███████║███████║██║  ██║█████╗  " -ForegroundColor Magenta
-    Write-Host "  ██╔══██╗██╔══╝  ╚════██║██╔══██║██╔══██║██║  ██║██╔══╝  " -ForegroundColor Magenta
-    Write-Host "  ██║  ██║███████╗███████║██║  ██║██║  ██║██████╔╝███████╗" -ForegroundColor Magenta
-    Write-Host "  ╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝" -ForegroundColor Magenta
+    Write-Host "  =================================================" -ForegroundColor DarkCyan
+    Write-Host "  |                                               |" -ForegroundColor DarkCyan
+    Write-Host "  |       RESHADEX INSTALLER  by INSIDEX          |" -ForegroundColor Cyan
+    Write-Host "  |                                               |" -ForegroundColor DarkCyan
+    Write-Host "  =================================================" -ForegroundColor DarkCyan
     Write-Host ""
-    Write-Host "  ReShade Installer  |  by INSIDEX" -ForegroundColor DarkGray
-    Write-Host "  ─────────────────────────────────────────────────────────" -ForegroundColor DarkGray
+    Write-Host "  Powered by Shxrk  |  INSIDEX" -ForegroundColor DarkGray
     Write-Host ""
 }
 
