@@ -3,7 +3,7 @@
 # iex (irm 'https://raw.githubusercontent.com/xintapayyasiriphumi-web/reshadexinstaller/main/install.ps1')
 # ================================================================
 
-$KEYAUTH_NAME    = "General Key"
+$KEYAUTH_NAME    = "reshadexinstall"
 $KEYAUTH_OWNERID = "h73NBoWgLW"
 $KEYAUTH_VERSION = "1.0"
 $KEYAUTH_URL     = "https://keyauth.win/api/1.2/"
