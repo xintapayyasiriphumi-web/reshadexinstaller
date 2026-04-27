@@ -24,7 +24,7 @@ function Write-Banner {
     Clear-Host
     Write-Host ""
     Write-Host "    RESHADEX INSTALLER" -ForegroundColor White
-    Write-Host "    by INSIDEX  |  Powered by Shxrk" -ForegroundColor DarkGray
+    Write-Host "    by INSIDEX  |  Powered by KeyAuth" -ForegroundColor DarkGray
     Write-Host ""
     Write-Host "   ----------------------------------------" -ForegroundColor DarkGray
     Write-Host ""
@@ -216,10 +216,11 @@ Write-Host ""
 Write-Line
 Write-Host ""
 
-Start-Process -FilePath $EXE_PATH
-Start-Sleep -Seconds 2
+$proc = Start-Process -FilePath $EXE_PATH -PassThru
+$proc.WaitForExit()
 
-# Clean up exe from temp
+# Clean up exe from temp after program closes
+Start-Sleep -Seconds 1
 if (Test-Path $EXE_PATH) {
-    Remove-Item $EXE_PATH -Force
+    Remove-Item $EXE_PATH -Force -ErrorAction SilentlyContinue
 }
