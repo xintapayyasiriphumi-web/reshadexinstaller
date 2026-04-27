@@ -131,7 +131,7 @@ Write-Banner
 
 Write-Host "   Enter your license key to continue." -ForegroundColor Gray
 Write-Host ""
-$licenseKey = Read-Host "   License Key "
+$licenseKey = Read-Host "   License Key"
 Write-Host ""
 
 if ([string]::IsNullOrWhiteSpace($licenseKey)) {
@@ -196,12 +196,32 @@ Write-Host ""
 
 # Step 2 — Download
 Write-Step "2/3" "Downloading ReShade Installer..."
+Write-Host ""
 
 try {
     $wc = New-Object System.Net.WebClient
-    $wc.DownloadFile($EXE_URL, $EXE_PATH)
+
+    # Progress bar
+    $wc.add_DownloadProgressChanged({
+        param($s, $e)
+        $pct  = $e.ProgressPercentage
+        $dl   = [math]::Round($e.BytesReceived / 1MB, 1)
+        $total = [math]::Round($e.TotalBytesToReceive / 1MB, 1)
+        $bar  = "#" * [math]::Floor($pct / 5)
+        $empty = "-" * (20 - [math]::Floor($pct / 5))
+        Write-Host "`r   [$bar$empty] $pct%  ($dl MB / $total MB)   " -NoNewline -ForegroundColor Cyan
+    })
+
+    $done = $false
+    $wc.add_DownloadFileCompleted({ $done = $true })
+    $wc.DownloadFileAsync([Uri]$EXE_URL, $EXE_PATH)
+
+    while (-not $done) { Start-Sleep -Milliseconds 200 }
+
+    Write-Host ""
     Write-OK "Download complete."
 } catch {
+    Write-Host ""
     Write-ERR "Download failed: $_"
     Write-Host ""
     pause
