@@ -3,69 +3,64 @@
 # iex (irm 'https://raw.githubusercontent.com/xintapayyasiriphumi-web/reshadexinstaller/main/install.ps1')
 # ================================================================
 
-# KeyAuth Config — แก้ให้ตรงกับ dashboard
 $KEYAUTH_NAME    = "General Key"
 $KEYAUTH_OWNERID = "h73NBoWgLW"
 $KEYAUTH_VERSION = "1.0"
 $KEYAUTH_URL     = "https://keyauth.win/api/1.2/"
 
-# Download URL
 $EXE_URL  = "https://github.com/xintapayyasiriphumi-web/reshadexinstaller/releases/download/v1.0.1/ReShadeInstaller.exe"
 $EXE_NAME = "ReShadeInstaller.exe"
 $EXE_PATH = "$env:TEMP\$EXE_NAME"
 
-# ================================================================
-# UI Helpers
+# FiveM paths to clean
+$FIVEM_PATHS = @(
+    "$env:LOCALAPPDATA\FiveM\FiveM.app",
+    "$env:LOCALAPPDATA\FiveM\FiveM Application Data"
+)
+
 # ================================================================
 
 function Write-Banner {
     Clear-Host
     Write-Host ""
-    Write-Host "  =================================================" -ForegroundColor DarkCyan
-    Write-Host "  |                                               |" -ForegroundColor DarkCyan
-    Write-Host "  |       RESHADEX INSTALLER  by INSIDEX          |" -ForegroundColor Cyan
-    Write-Host "  |                                               |" -ForegroundColor DarkCyan
-    Write-Host "  =================================================" -ForegroundColor DarkCyan
+    Write-Host "    RESHADEX INSTALLER" -ForegroundColor White
+    Write-Host "    by INSIDEX  |  Powered by Shxrk" -ForegroundColor DarkGray
     Write-Host ""
-    Write-Host "  Powered by Shxrk  |  INSIDEX" -ForegroundColor DarkGray
+    Write-Host "   ----------------------------------------" -ForegroundColor DarkGray
     Write-Host ""
 }
 
-function Write-Status($msg, $color = "Cyan") {
-    Write-Host "  » $msg" -ForegroundColor $color
+function Write-Step($step, $msg) {
+    Write-Host "   [$step] $msg" -ForegroundColor Cyan
 }
 
-function Write-Success($msg) {
-    Write-Host "  ✓ $msg" -ForegroundColor Green
+function Write-OK($msg) {
+    Write-Host "   [OK] $msg" -ForegroundColor Green
 }
 
-function Write-Fail($msg) {
-    Write-Host "  ✗ $msg" -ForegroundColor Red
+function Write-ERR($msg) {
+    Write-Host "   [ERROR] $msg" -ForegroundColor Red
 }
 
-# ================================================================
-# HWID
+function Write-Line {
+    Write-Host "   ----------------------------------------" -ForegroundColor DarkGray
+}
+
 # ================================================================
 
 function Get-HWID {
-    $raw = "$env:COMPUTERNAME-$env:USERNAME-$env:PROCESSOR_IDENTIFIER"
+    $raw   = "$env:COMPUTERNAME-$env:USERNAME-$env:PROCESSOR_IDENTIFIER"
     $bytes = [System.Text.Encoding]::UTF8.GetBytes($raw)
     $hash  = [System.Security.Cryptography.SHA256]::Create().ComputeHash($bytes)
     return ([BitConverter]::ToString($hash) -replace '-','').ToLower().Substring(0, 32)
 }
-
-# ================================================================
-# KeyAuth
-# ================================================================
 
 function KeyAuth-Init {
     try {
         $body = "type=init&name=$KEYAUTH_NAME&ownerid=$KEYAUTH_OWNERID&ver=$KEYAUTH_VERSION"
         $resp = Invoke-RestMethod -Uri $KEYAUTH_URL -Method Post -Body $body -ContentType "application/x-www-form-urlencoded" -TimeoutSec 10
         return $resp
-    } catch {
-        return $null
-    }
+    } catch { return $null }
 }
 
 function KeyAuth-License($sessionId, $licenseKey, $hwid) {
@@ -73,9 +68,59 @@ function KeyAuth-License($sessionId, $licenseKey, $hwid) {
         $body = "type=license&key=$licenseKey&hwid=$hwid&sessionid=$sessionId&name=$KEYAUTH_NAME&ownerid=$KEYAUTH_OWNERID"
         $resp = Invoke-RestMethod -Uri $KEYAUTH_URL -Method Post -Body $body -ContentType "application/x-www-form-urlencoded" -TimeoutSec 10
         return $resp
-    } catch {
-        return $null
+    } catch { return $null }
+}
+
+# ================================================================
+# UNINSTALL
+# ================================================================
+
+function Run-Uninstall {
+    Write-Host ""
+    Write-Line
+    Write-Host ""
+    Write-Step "1/1" "Removing ReShade files from FiveM..."
+    Write-Host ""
+
+    $found = $false
+
+    foreach ($basePath in $FIVEM_PATHS) {
+        if (Test-Path $basePath) {
+            $found = $true
+            $pluginPath = Join-Path $basePath "plugins"
+
+            # Files to remove
+            $files = @("dxgi.dll", "ReShade.ini", "ReShadePreset.ini", "ReShade.log")
+            foreach ($f in $files) {
+                $fp = Join-Path $pluginPath $f
+                if (Test-Path $fp) {
+                    Remove-Item $fp -Force
+                    Write-OK "Removed: $f"
+                }
+            }
+
+            # Folder to remove
+            $dataPath = Join-Path $pluginPath "reshade-data"
+            if (Test-Path $dataPath) {
+                Remove-Item $dataPath -Recurse -Force
+                Write-OK "Removed: reshade-data folder"
+            }
+        }
     }
+
+    if (-not $found) {
+        Write-ERR "FiveM installation not found."
+        Write-Host ""
+        pause
+        exit 1
+    }
+
+    Write-Host ""
+    Write-Line
+    Write-Host ""
+    Write-Host "   ReShade has been removed successfully." -ForegroundColor Green
+    Write-Host ""
+    pause
 }
 
 # ================================================================
@@ -84,65 +129,97 @@ function KeyAuth-License($sessionId, $licenseKey, $hwid) {
 
 Write-Banner
 
-# รับ License Key
-Write-Host "  กรอก License Key ของคุณ:" -ForegroundColor Yellow
+Write-Host "   Enter your license key to continue." -ForegroundColor Gray
 Write-Host ""
-$licenseKey = Read-Host "  License Key"
+$licenseKey = Read-Host "   License Key"
+Write-Host ""
 
 if ([string]::IsNullOrWhiteSpace($licenseKey)) {
-    Write-Fail "ไม่ได้กรอก License Key"
+    Write-ERR "No license key entered."
     Write-Host ""
     pause
     exit 1
 }
 
+Write-Line
 Write-Host ""
-Write-Status "กำลัง verify license..."
 
-# Init session
+# Step 1 — Verify
+Write-Step "1/3" "Verifying license..."
+
 $init = KeyAuth-Init
 if (-not $init -or -not $init.success) {
-    $msg = if ($init) { $init.message } else { "ไม่สามารถเชื่อมต่อ auth server" }
-    Write-Fail "Auth server error: $msg"
+    $msg = if ($init) { $init.message } else { "Cannot connect to auth server." }
+    Write-ERR "Auth failed: $msg"
     Write-Host ""
     pause
     exit 1
 }
 
-# Verify license
-$hwid    = Get-HWID
-$verify  = KeyAuth-License $init.sessionid $licenseKey.Trim() $hwid
+$hwid   = Get-HWID
+$verify = KeyAuth-License $init.sessionid $licenseKey.Trim() $hwid
 
 if (-not $verify -or -not $verify.success) {
-    $msg = if ($verify) { $verify.message } else { "ไม่สามารถ verify ได้" }
-    Write-Fail "License ไม่ถูกต้อง: $msg"
+    $msg = if ($verify) { $verify.message } else { "Verification failed." }
+    Write-ERR "Invalid license: $msg"
     Write-Host ""
     pause
     exit 1
 }
 
-Write-Success "License ถูกต้อง!"
+Write-OK "License verified."
+Write-Host ""
+Write-Line
 Write-Host ""
 
-# Download exe
-Write-Status "กำลัง download ReShade Installer..."
+# Select mode
+Write-Host "   Select an option:" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "   [1] Install ReShade" -ForegroundColor White
+Write-Host "   [2] Uninstall ReShade" -ForegroundColor White
+Write-Host ""
+$choice = Read-Host "   Enter 1 or 2"
+
+if ($choice -eq "2") {
+    Run-Uninstall
+    exit 0
+}
+
+if ($choice -ne "1") {
+    Write-ERR "Invalid option."
+    Write-Host ""
+    pause
+    exit 1
+}
+
+Write-Host ""
+
+# Step 2 — Download
+Write-Step "2/3" "Downloading ReShade Installer..."
 
 try {
     $wc = New-Object System.Net.WebClient
     $wc.DownloadFile($EXE_URL, $EXE_PATH)
-    Write-Success "Download สำเร็จ"
+    Write-OK "Download complete."
 } catch {
-    Write-Fail "Download ไม่สำเร็จ: $_"
+    Write-ERR "Download failed: $_"
     Write-Host ""
     pause
     exit 1
 }
 
 Write-Host ""
-Write-Status "กำลังเปิด ReShade Installer..." "Green"
+
+# Step 3 — Launch
+Write-Step "3/3" "Launching ReShade Installer..."
+Write-Host ""
+Write-Line
 Write-Host ""
 
-# Launch exe
 Start-Process -FilePath $EXE_PATH
-
 Start-Sleep -Seconds 2
+
+# Clean up exe from temp
+if (Test-Path $EXE_PATH) {
+    Remove-Item $EXE_PATH -Force
+}
