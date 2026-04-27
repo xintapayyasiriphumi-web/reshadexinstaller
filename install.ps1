@@ -194,57 +194,56 @@ if ($choice -ne "1") {
 
 Write-Host ""
 
-# Step 2 — Download
-Write-Step "2/3" "Downloading ReShade Installer..."
+# Step 2 — Download + Step 3 — Launch in new window
+Write-Step "2/3" "Downloading and launching ReShade Installer..."
+Write-Host ""
+
+# Build inline script to run in new window
+$script = @"
+`$EXE_URL  = '$EXE_URL'
+`$EXE_PATH = '$EXE_PATH'
+
+Write-Host ""
+Write-Host "   Downloading ReShade Installer..." -ForegroundColor Cyan
 Write-Host ""
 
 try {
-    $wc = New-Object System.Net.WebClient
-
-    # Progress bar
-    $wc.add_DownloadProgressChanged({
-        param($s, $e)
-        $pct  = $e.ProgressPercentage
-        $dl   = [math]::Round($e.BytesReceived / 1MB, 1)
-        $total = [math]::Round($e.TotalBytesToReceive / 1MB, 1)
-        $bar  = "#" * [math]::Floor($pct / 5)
-        $empty = "-" * (20 - [math]::Floor($pct / 5))
-        Write-Host "`r   [$bar$empty] $pct%  ($dl MB / $total MB)   " -NoNewline -ForegroundColor Cyan
+    `$wc = New-Object System.Net.WebClient
+    `$wc.add_DownloadProgressChanged({
+        param(`$s, `$e)
+        `$pct   = `$e.ProgressPercentage
+        `$dl    = [math]::Round(`$e.BytesReceived / 1MB, 1)
+        `$total = [math]::Round(`$e.TotalBytesToReceive / 1MB, 1)
+        `$bar   = "#" * [math]::Floor(`$pct / 5)
+        `$empty = "-" * (20 - [math]::Floor(`$pct / 5))
+        Write-Host "`r   [`$bar`$empty] `$pct%  (`$dl MB / `$total MB)   " -NoNewline -ForegroundColor Cyan
     })
-
-    $done = $false
-    $wc.add_DownloadFileCompleted({ $done = $true })
-    $wc.DownloadFileAsync([Uri]$EXE_URL, $EXE_PATH)
-
-    while (-not $done) { Start-Sleep -Milliseconds 200 }
-
+    `$done = `$false
+    `$wc.add_DownloadFileCompleted({ `$done = `$true })
+    `$wc.DownloadFileAsync([Uri]`$EXE_URL, `$EXE_PATH)
+    while (-not `$done) { Start-Sleep -Milliseconds 200 }
     Write-Host ""
-    Write-OK "Download complete."
+    Write-Host "   [OK] Download complete." -ForegroundColor Green
 } catch {
     Write-Host ""
-    Write-ERR "Download failed: $_"
-    Write-Host ""
+    Write-Host "   [ERROR] Download failed: `$_" -ForegroundColor Red
     pause
     exit 1
 }
 
 Write-Host ""
-
-# Step 3 — Launch
-Write-Step "3/3" "Launching ReShade Installer..."
+Write-Host "   Launching ReShade Installer..." -ForegroundColor Cyan
 Write-Host ""
-Write-Line
+Write-Host "   ----------------------------------------" -ForegroundColor DarkGray
 Write-Host ""
 
-$proc = Start-Process -FilePath $EXE_PATH -PassThru
-
-# Wait silently for program to close, then delete
-$proc.WaitForExit() | Out-Null
+`$proc = Start-Process -FilePath `$EXE_PATH -PassThru
+`$proc.WaitForExit() | Out-Null
 
 Start-Sleep -Seconds 1
-if (Test-Path $EXE_PATH) {
-    Remove-Item $EXE_PATH -Force -ErrorAction SilentlyContinue
+if (Test-Path `$EXE_PATH) {
+    Remove-Item `$EXE_PATH -Force -ErrorAction SilentlyContinue
 }
+"@
 
-# Close PowerShell window
-Stop-Process -Id $PID
+Start-Process powershell -ArgumentList "-NoExit", "-Command", $script
