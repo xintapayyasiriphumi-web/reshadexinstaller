@@ -24,7 +24,7 @@ function Write-Banner {
     Clear-Host
     Write-Host ""
     Write-Host "    RESHADEX INSTALLER" -ForegroundColor White
-    Write-Host "    by INSIDEX  |  Powered by KeyAuth" -ForegroundColor DarkGray
+    Write-Host "    by INSIDEX  |  Powered by Shxrk" -ForegroundColor DarkGray
     Write-Host ""
     Write-Host "   ----------------------------------------" -ForegroundColor DarkGray
     Write-Host ""
@@ -131,7 +131,7 @@ Write-Banner
 
 Write-Host "   Enter your license key to continue." -ForegroundColor Gray
 Write-Host ""
-$licenseKey = Read-Host "   License Key"
+$licenseKey = Read-Host "   License Key "
 Write-Host ""
 
 if ([string]::IsNullOrWhiteSpace($licenseKey)) {
