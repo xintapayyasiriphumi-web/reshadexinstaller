@@ -12,41 +12,25 @@ $EXE_URL  = "https://github.com/xintapayyasiriphumi-web/reshadexinstaller/releas
 $EXE_NAME = "ReShadeInstaller.exe"
 $EXE_PATH = "$env:TEMP\$EXE_NAME"
 
-# FiveM paths to clean
 $FIVEM_PATHS = @(
     "$env:LOCALAPPDATA\FiveM\FiveM.app",
     "$env:LOCALAPPDATA\FiveM\FiveM Application Data"
 )
 
-# ================================================================
-
 function Write-Banner {
     Clear-Host
     Write-Host ""
     Write-Host "    RESHADEX INSTALLER" -ForegroundColor White
-    Write-Host "    by INSIDEX  |  Powered by KeyAuth" -ForegroundColor DarkGray
+    Write-Host "    by INSIDEX  |  Powered by Shxrk" -ForegroundColor DarkGray
     Write-Host ""
     Write-Host "   ----------------------------------------" -ForegroundColor DarkGray
     Write-Host ""
 }
 
-function Write-Step($step, $msg) {
-    Write-Host "   [$step] $msg" -ForegroundColor Cyan
-}
-
-function Write-OK($msg) {
-    Write-Host "   [OK] $msg" -ForegroundColor Green
-}
-
-function Write-ERR($msg) {
-    Write-Host "   [ERROR] $msg" -ForegroundColor Red
-}
-
-function Write-Line {
-    Write-Host "   ----------------------------------------" -ForegroundColor DarkGray
-}
-
-# ================================================================
+function Write-Step($step, $msg) { Write-Host "   [$step] $msg" -ForegroundColor Cyan }
+function Write-OK($msg)          { Write-Host "   [OK] $msg" -ForegroundColor Green }
+function Write-ERR($msg)         { Write-Host "   [ERROR] $msg" -ForegroundColor Red }
+function Write-Line              { Write-Host "   ----------------------------------------" -ForegroundColor DarkGray }
 
 function Get-HWID {
     $raw   = "$env:COMPUTERNAME-$env:USERNAME-$env:PROCESSOR_IDENTIFIER"
@@ -71,10 +55,6 @@ function KeyAuth-License($sessionId, $licenseKey, $hwid) {
     } catch { return $null }
 }
 
-# ================================================================
-# UNINSTALL
-# ================================================================
-
 function Run-Uninstall {
     Write-Host ""
     Write-Line
@@ -83,13 +63,10 @@ function Run-Uninstall {
     Write-Host ""
 
     $found = $false
-
     foreach ($basePath in $FIVEM_PATHS) {
         if (Test-Path $basePath) {
             $found = $true
             $pluginPath = Join-Path $basePath "plugins"
-
-            # Files to remove
             $files = @("dxgi.dll", "ReShade.ini", "ReShadePreset.ini", "ReShade.log")
             foreach ($f in $files) {
                 $fp = Join-Path $pluginPath $f
@@ -98,8 +75,6 @@ function Run-Uninstall {
                     Write-OK "Removed: $f"
                 }
             }
-
-            # Folder to remove
             $dataPath = Join-Path $pluginPath "reshade-data"
             if (Test-Path $dataPath) {
                 Remove-Item $dataPath -Recurse -Force
@@ -110,9 +85,7 @@ function Run-Uninstall {
 
     if (-not $found) {
         Write-ERR "FiveM installation not found."
-        Write-Host ""
-        pause
-        exit 1
+        Write-Host ""; pause; exit 1
     }
 
     Write-Host ""
@@ -121,6 +94,35 @@ function Run-Uninstall {
     Write-Host "   ReShade has been removed successfully." -ForegroundColor Green
     Write-Host ""
     pause
+}
+
+function Download-WithProgress($url, $dest) {
+    $req = [System.Net.HttpWebRequest]::Create($url)
+    $req.AllowAutoRedirect = $true
+    $resp = $req.GetResponse()
+    $total = $resp.ContentLength
+    $stream = $resp.GetResponseStream()
+    $out = [System.IO.File]::Create($dest)
+    $buf = New-Object byte[] 8192
+    $downloaded = 0
+
+    while ($true) {
+        $read = $stream.Read($buf, 0, $buf.Length)
+        if ($read -le 0) { break }
+        $out.Write($buf, 0, $read)
+        $downloaded += $read
+        if ($total -gt 0) {
+            $pct   = [math]::Floor($downloaded * 100 / $total)
+            $dlMB  = [math]::Round($downloaded / 1MB, 1)
+            $totMB = [math]::Round($total / 1MB, 1)
+            $bar   = ("=" * [math]::Floor($pct / 5)).PadRight(20, '-')
+            Write-Host "`r   [$bar] $pct%  ($dlMB MB / $totMB MB)  " -NoNewline -ForegroundColor Cyan
+        }
+    }
+
+    $out.Close()
+    $stream.Close()
+    Write-Host ""
 }
 
 # ================================================================
@@ -136,24 +138,18 @@ Write-Host ""
 
 if ([string]::IsNullOrWhiteSpace($licenseKey)) {
     Write-ERR "No license key entered."
-    Write-Host ""
-    pause
-    exit 1
+    Write-Host ""; pause; exit 1
 }
 
 Write-Line
 Write-Host ""
-
-# Step 1 — Verify
 Write-Step "1/3" "Verifying license..."
 
 $init = KeyAuth-Init
 if (-not $init -or -not $init.success) {
     $msg = if ($init) { $init.message } else { "Cannot connect to auth server." }
     Write-ERR "Auth failed: $msg"
-    Write-Host ""
-    pause
-    exit 1
+    Write-Host ""; pause; exit 1
 }
 
 $hwid   = Get-HWID
@@ -162,9 +158,7 @@ $verify = KeyAuth-License $init.sessionid $licenseKey.Trim() $hwid
 if (-not $verify -or -not $verify.success) {
     $msg = if ($verify) { $verify.message } else { "Verification failed." }
     Write-ERR "Invalid license: $msg"
-    Write-Host ""
-    pause
-    exit 1
+    Write-Host ""; pause; exit 1
 }
 
 Write-OK "License verified."
@@ -172,7 +166,6 @@ Write-Host ""
 Write-Line
 Write-Host ""
 
-# Select mode
 Write-Host "   Select an option:" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "   [1] Install ReShade" -ForegroundColor White
@@ -180,70 +173,34 @@ Write-Host "   [2] Uninstall ReShade" -ForegroundColor White
 Write-Host ""
 $choice = Read-Host "   Enter 1 or 2"
 
-if ($choice -eq "2") {
-    Run-Uninstall
-    exit 0
-}
-
+if ($choice -eq "2") { Run-Uninstall; exit 0 }
 if ($choice -ne "1") {
     Write-ERR "Invalid option."
-    Write-Host ""
-    pause
-    exit 1
+    Write-Host ""; pause; exit 1
 }
 
 Write-Host ""
-
-# Step 2 — Download + Step 3 — Launch in new window
-Write-Step "2/3" "Downloading and launching ReShade Installer..."
-Write-Host ""
-
-# Build inline script to run in new window
-$script = @"
-`$EXE_URL  = '$EXE_URL'
-`$EXE_PATH = '$EXE_PATH'
-
-Write-Host ""
-Write-Host "   Downloading ReShade Installer..." -ForegroundColor Cyan
+Write-Step "2/3" "Downloading ReShade Installer..."
 Write-Host ""
 
 try {
-    `$wc = New-Object System.Net.WebClient
-    `$wc.add_DownloadProgressChanged({
-        param(`$s, `$e)
-        `$pct   = `$e.ProgressPercentage
-        `$dl    = [math]::Round(`$e.BytesReceived / 1MB, 1)
-        `$total = [math]::Round(`$e.TotalBytesToReceive / 1MB, 1)
-        `$bar   = "#" * [math]::Floor(`$pct / 5)
-        `$empty = "-" * (20 - [math]::Floor(`$pct / 5))
-        Write-Host "`r   [`$bar`$empty] `$pct%  (`$dl MB / `$total MB)   " -NoNewline -ForegroundColor Cyan
-    })
-    `$done = `$false
-    `$wc.add_DownloadFileCompleted({ `$done = `$true })
-    `$wc.DownloadFileAsync([Uri]`$EXE_URL, `$EXE_PATH)
-    while (-not `$done) { Start-Sleep -Milliseconds 200 }
-    Write-Host ""
-    Write-Host "   [OK] Download complete." -ForegroundColor Green
+    Download-WithProgress $EXE_URL $EXE_PATH
+    Write-OK "Download complete."
 } catch {
-    Write-Host ""
-    Write-Host "   [ERROR] Download failed: `$_" -ForegroundColor Red
-    pause
-    exit 1
+    Write-ERR "Download failed: $_"
+    Write-Host ""; pause; exit 1
 }
 
 Write-Host ""
-Write-Host "   Launching ReShade Installer..." -ForegroundColor Cyan
+Write-Step "3/3" "Launching ReShade Installer..."
 Write-Host ""
-Write-Host "   ----------------------------------------" -ForegroundColor DarkGray
+Write-Line
 Write-Host ""
 
-`$proc = Start-Process -FilePath `$EXE_PATH -PassThru
-`$proc.WaitForExit() | Out-Null
+$proc = Start-Process -FilePath $EXE_PATH -PassThru
+$proc.WaitForExit() | Out-Null
 
 Start-Sleep -Seconds 1
-if (Test-Path `$EXE_PATH) {
-    Remove-Item `$EXE_PATH -Force -ErrorAction SilentlyContinue
+if (Test-Path $EXE_PATH) {
+    Remove-Item $EXE_PATH -Force -ErrorAction SilentlyContinue
 }
-"@
-
-Start-Process powershell -ArgumentList "-NoExit", "-Command", $script
