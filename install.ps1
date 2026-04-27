@@ -8,7 +8,7 @@ $KEYAUTH_OWNERID = "h73NBoWgLW"
 $KEYAUTH_VERSION = "1.0"
 $KEYAUTH_URL     = "https://keyauth.win/api/1.2/"
 
-$EXE_URL  = "https://github.com/xintapayyasiriphumi-web/reshadexinstaller/releases/download/v1.0.1/ReShadeInstaller.exe"
+$EXE_URL  = "https://github.com/xintapayyasiriphumi-web/reshadexinstaller/releases/download/v1.0.2/ReShadeInstaller.exe"
 $EXE_NAME = "ReShadeInstaller.exe"
 $EXE_PATH = "$env:TEMP\$EXE_NAME"
 
