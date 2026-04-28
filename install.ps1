@@ -8,8 +8,8 @@ $KEYAUTH_OWNERID = "h73NBoWgLW"
 $KEYAUTH_VERSION = "1.0"
 $KEYAUTH_URL     = "https://keyauth.win/api/1.2/"
 
-$EXE_URL  = "https://github.com/xintapayyasiriphumi-web/reshadexinstaller/releases/download/v1.0.3/ReShadeInstallerx.exe"
-$EXE_NAME = "ReShadeInstaller.exe"
+$EXE_URL  = "https://github.com/xintapayyasiriphumi-web/reshadexinstaller/releases/download/v2.0.0/ReShadexInstaller.exe"
+$EXE_NAME = "ReShadexInstaller.exe"
 $EXE_PATH = "$env:TEMP\$EXE_NAME"
 
 $FIVEM_PATHS = @(
@@ -133,7 +133,7 @@ Write-Banner
 
 Write-Host "   Enter your license key to continue." -ForegroundColor Gray
 Write-Host ""
-$licenseKey = Read-Host "   License Key"
+$licenseKey = Read-Host "   License Key "
 Write-Host ""
 
 if ([string]::IsNullOrWhiteSpace($licenseKey)) {
